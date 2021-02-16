@@ -1,0 +1,139 @@
+version: "2.1"
+
+services:
+  namenode:
+    build: ./namenode
+    container_name: namenode
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop.env
+    ports:
+      - "9870:9870"
+  
+  resourcemanager:
+    build: ./resourcemanager
+    container_name: resourcemanager
+    restart: on-failure
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+      - datanode3
+      - datanode4 
+    env_file:
+      - ./hadoop.env
+    ports:
+      - "8089:8088"
+  
+  historyserver:
+    build: ./historyserver
+    container_name: historyserver
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+      - datanode3 
+      - datanode4 
+    volumes:
+      - hadoop_historyserver:/hadoop/yarn/timeline
+    env_file:
+      - ./hadoop.env
+    ports:
+      - "8188:8188"
+  
+  nodemanager1:
+    build: ./nodemanager
+    container_name: nodemanager1
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+      - datanode3
+      - datanode4 
+    env_file:
+      - ./hadoop.env
+    ports:
+      - "8042:8042"
+  
+  datanode1:
+    build: ./datanode
+    container_name: datanode1
+    restart: always
+    depends_on:
+      - namenode
+    volumes:
+      - hadoop_datanode1:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
+  
+  datanode2:
+    build: ./datanode
+    container_name: datanode2
+    restart: always
+    depends_on:
+      - namenode
+    volumes:
+      - hadoop_datanode2:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
+  
+  datanode3:
+    build: ./datanode
+    container_name: datanode3
+    restart: always
+    depends_on:
+      - namenode
+    volumes:
+      - hadoop_datanode3:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
+  
+  datanode4:
+    build: ./datanode
+    container_name: datanode4
+    restart: always
+    depends_on:
+      - namenode
+    volumes:
+      - hadoop_datanode4:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
+  pyspark:
+    image: jupyter/pyspark-notebook
+    container_name: pyspark-notebook
+    ports:
+      - "8888:8888"            
+    volumes:
+      - ./notebook/:/home/jovyan/work/  
+      
+  spark-master:
+    image: bde2020/spark-master:3.0.1-hadoop3.2
+    container_name: spark-master
+    ports:
+      - 8080:8080
+      - 7077:7077
+    env_file:
+      - ./hadoop.env
+      
+  spark-worker:
+    image: bde2020/spark-worker:3.0.1-hadoop3.2
+    #container_name: spark-worker1 
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+    ports:
+      - 8081
+    env_file:
+      - ./hadoop.env
+  
+volumes:
+  hadoop_namenode:
+  hadoop_datanode1:
+  hadoop_datanode2:
+  hadoop_datanode3:
+  hadoop_datanode4:
+  hadoop_historyserver:
